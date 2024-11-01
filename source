@@ -1,0 +1,86 @@
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local Window = Library.CreateLib("[🌌VOID] Strong Ninja Simulator", "Sentinel")
+
+local MainTab = Window:NewTab("Main")
+local MainSection = MainTab:NewSection("Main Section")
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
+_G.AutoEarn = false
+_G.AutoBuy = false
+_G.AutoRebirth = false
+
+local unitNames = {
+    "Archer",
+    "Turret",
+    "Ninja",
+    "Soldier",
+    "Sniper",
+    "Bomber",
+    "Wizard"
+}
+
+local function isUnitName(name)
+    for _, unitName in ipairs(unitNames) do
+        if string.find(name:lower(), unitName:lower()) then
+            return true
+        end
+    end
+    return false
+end
+
+MainSection:NewToggle("Auto Earn", "Automatically earns for you", function(state)
+    _G.AutoEarn = state
+    while _G.AutoEarn and task.wait(-9e9) do
+        for i = 1, 30 do
+            if not _G.AutoEarn then break end
+            game:GetService("ReplicatedStorage").Knit.Services.TycoonService.RF.PayIncome:InvokeServer(game:GetService("Players").LocalPlayer)
+            task.wait(-9e9)
+        end
+    end
+end)
+
+MainSection:NewToggle("Auto Rebirth", "Automatically rebirths for you", function(state)
+    _G.AutoRebirth = state
+    while _G.AutoRebirth and task.wait(-9e9) do
+        game:GetService("ReplicatedStorage"):WaitForChild("Knit"):WaitForChild("Services"):WaitForChild("TycoonService"):WaitForChild("RF"):WaitForChild("Rebirth"):InvokeServer()
+    end
+end)
+
+MainSection:NewToggle("Auto Buy", "Automatically buys the buttons for you", function(state)
+    _G.AutoBuy = state
+    while _G.AutoBuy and task.wait(-9e9) do
+        for _, tycoon in ipairs(workspace:WaitForChild("Tycoons"):GetChildren()) do
+            if tycoon:IsA("Folder") and tycoon:GetAttribute("Owner") == game.Players.LocalPlayer.Name then
+                local buttonFolder = tycoon:FindFirstChild("Buttons")
+                
+                if buttonFolder then
+                    for _, button in ipairs(buttonFolder:GetChildren()) do
+                        if button:IsA("Model") and not string.find(button.Name:lower(), "gamepass") then
+                            local isUnit = isUnitName(button.Name)
+                            local purchaseType = isUnit and 3 or 1
+                            
+                            local tycoonService = game:GetService("ReplicatedStorage"):WaitForChild("Knit"):WaitForChild("Services"):WaitForChild("TycoonService")
+                            tycoonService.RF.BuyObject:InvokeServer(button.Name, purchaseType)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+MainSection:NewButton("Infinite Cash", "ButtonInfo", function()
+    local args = {
+        [1] = math.huge
+    }
+    
+    game:GetService("ReplicatedStorage"):WaitForChild("Knit"):WaitForChild("Services"):WaitForChild("RaidService"):WaitForChild("RF"):WaitForChild("GiveReward"):InvokeServer(unpack(args))
+end)
+
+character.Humanoid.WalkSpeed = 60
+player.CharacterAdded:Connect(function(newCharacter)
+    character = newCharacter
+    character.Humanoid.WalkSpeed = 60
+end)
